@@ -1,3 +1,14 @@
+#include ... 
+
+typedef struct AVL_struct{
+   int valeur;
+   int eq;
+   struct AVL_struct *fg;
+   struct AVL_struct *fd;
+// ajt id usine 
+}AVL;
+
+
 
 AVL* creationAVL(int e)
 {
