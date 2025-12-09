@@ -1,16 +1,15 @@
 
-AVL* creerAVL(int e)
+AVL* creationAVL(int e)
 {
-    // Alloue de la mémoire pour un nouveau nœud
-    AVL* new = (AVL* )malloc(sizeof(AVL));
-    if (new == NULL)
+    AVL* nouveau = (AVL* )malloc(sizeof(AVL));
+    if (nouveau == NULL)
     {
-        exit(EXIT_FAILURE); // Arrêt immédiat en cas d'erreur d'allocation
+        exit(EXIT_FAILURE); 
     }
-    new->value = e; // Initialisation de la valeur
-    new->fg = NULL; // Pas de fils gauche
-    new->fd = NULL; // Pas de fils droit
-    new->eq = 0;    // Facteur d'équilibre initialisé à 0
-    return new;
+    nouveau->value = e; 
+    nouveau->fg = NULL; 
+    nouveau->fd = NULL; 
+    nouveau->eq = 0;    
+    return nouveau;
 }
 
