@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -ne 3 ]; then
-    echo "Usage : ./myScript.sh c-wildwater.dat histo {max|src|real}"
+    echo "Veuillez suivre ce schéma : ./myScript.sh c-wildwater.dat histo {max|src|real}"
     exit 1
 fi
 
@@ -30,18 +30,18 @@ fi
 TMP_FILE="filtered_$OPTION.tmp"
 
 if [ "$OPTION" = "src" ]; then
-    #MAUVAIS GREP A REVOIR 
-    grep "Spring" "$DATA_FILE" | awk -F';' '{print $3 ";" $4}' > "$TMP_FILE"
+    # volume total capté par les sources
+    grep "^-;Spring #[^;]*;Facility complex #[^;]*;[^;]*;[^;]*$" "$DATA_FILE" | awk -F';' '{print $3 ";" $4}' > "$TMP_FILE"
     
 
 elif [ "$OPTION" = "real" ]; then
     #MAUVAIS GREP A REVOIR
-    grep "Spring" "$DATA_FILE" | awk -F';' '{print $3 ";" $4 ";" $5}' > "$TMP_FILE"
+    grep "^-;Spring #[^;]*;Facility complex #[^;]*;[^;]*;[^;]*$" "$DATA_FILE | awk -F';' '{print $3 ";" $4 ";" $5}' > "$TMP_FILE"
     
 
 elif [ "$OPTION" = "max" ]; then
-    #MAUVAIS GREP A REVOIR
-    grep "Facility complex" "$DATA_FILE" | awk -F';' '{print $2 ";" $4}' > "$TMP_FILE"
+    # ;-;identifiant;-;capacite max;-;
+     grep "^-;[^;]*;-;[^;]*;-"$DATA_FILE" | awk -F';' '{print $2 ";" $4}' > "$TMP_FILE" 
     
 fi
 
