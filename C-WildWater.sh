@@ -54,7 +54,8 @@ if [ "$?" -ne 0 ]; then
     exit 1
 fi
 
-#gnuplot graph
+#gnuplot graph chatgpt a revoir
+
 
 # 50 plus petites valeurs
 sort -t';' -k2 -n result.dat | head -n 50 > small.dat
