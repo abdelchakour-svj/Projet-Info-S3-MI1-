@@ -1,0 +1,81 @@
+#!/bin/bash
+
+if [ "$#" -ne 3 ]; then
+    echo "Usage : ./myScript.sh c-wildwater.dat histo {max|src|real}"
+    exit 1
+fi
+
+DATA_FILE="$1"
+ACTION="$2"
+OPTION="$3"
+
+if [ ! -f "$DATA_FILE" ]; then
+    echo "Erreur : fichier $DATA_FILE introuvable"
+    exit 1
+fi
+
+if [ "$ACTION" != "histo" ]; then
+    echo "Erreur : seule l'action 'histo' est supportée ici"
+    exit 1
+fi
+
+if [[ "$OPTION" != "max" && "$OPTION" != "src" && "$OPTION" != "real" ]]; then
+    echo "Erreur : option invalide ($OPTION)"
+    exit 1
+fi
+
+#Filtrage des donnée 
+
+TMP_FILE="filtered_$OPTION.tmp"
+
+if [ "$OPTION" = "src" ]; then
+    # On garde uniquement les lignes SOURCE -> USINE
+    grep "Spring" "$DATA_FILE" | \
+    awk -F';' '{print $3 ";" $4}' > "$TMP_FILE"
+
+elif [ "$OPTION" = "real" ]; then
+    # SOURCE -> USINE + taux de fuite
+    grep "Spring" "$DATA_FILE" | \
+    awk -F';' '{print $3 ";" $4 ";" $5}' > "$TMP_FILE"
+
+elif [ "$OPTION" = "max" ]; then
+    # Données concernant les usines
+    grep "Facility complex" "$DATA_FILE" | \
+    awk -F';' '{print $2 ";" $4}' > "$TMP_FILE"
+fi
+
+#apelle du c
+
+./wildwater "$OPTION" "$TMP_FILE" result.dat
+
+if [ "$?" -ne 0 ]; then
+    echo "Erreur lors de l'exécution du programme C"
+    exit 1
+fi
+
+#gnuplot graph
+
+# 50 plus petites valeurs
+sort -t';' -k2 -n result.dat | head -n 50 > small.dat
+
+# 10 plus grandes valeurs
+sort -t';' -k2 -nr result.dat | head -n 10 > big.dat
+
+gnuplot <<EOF
+set terminal png size 1200,800
+set datafile separator ";"
+set style data histograms
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+
+set output "histo_small.png"
+set title "50 plus petites usines"
+plot "small.dat" using 2:xtic(1) title "Volume"
+
+set output "histo_big.png"
+set title "10 plus grandes usines"
+plot "big.dat" using 2:xtic(1) title "Volume"
+EOF
+
+echo "Histogrammes générés avec succès"
