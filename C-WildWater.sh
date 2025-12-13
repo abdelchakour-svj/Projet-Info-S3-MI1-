@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+START_TIME=$(date +%s%3N)
+
+
 if [ "$#" -ne 3 ]; then
     echo "Veuillez suivre ce schéma : ./myScript.sh c-wildwater.dat histo {max|src|real}"
     exit 1
@@ -41,7 +45,7 @@ elif [ "$OPTION" = "real" ]; then
 
 elif [ "$OPTION" = "max" ]; then
     # ;-;identifiant;-;capacite max;-;
-     grep "^-;[^;]*;-;[^;]*;-"$DATA_FILE" | awk -F';' '{print $2 ";" $4}' > "$TMP_FILE" 
+     grep "^-;Facility complexe #[^;]*;-;[^;]*;-" "$DATA_FILE" | awk -F';' '{print $2 ";" $4}' > "$TMP_FILE" 
     
 fi
 
@@ -64,20 +68,32 @@ sort -t';' -k2 -n result.dat | head -n 50 > small.dat
 sort -t';' -k2 -nr result.dat | head -n 10 > big.dat
 
 gnuplot <<EOF
-set terminal png size 1200,800
+set terminal png size 1400,900
 set datafile separator ";"
 set style data histograms
-set style fill solid
-set boxwidth 0.8
-set xtics rotate by -45
+set style fill solid border -1
+set boxwidth 0.9
+set xtics rotate by -45 font ",8"
+set grid y
 
-set output "histo_small.png"
-set title "50 plus petites usines"
-plot "small.dat" using 2:xtic(1) title "Volume"
+set output "vol_${OPTION}_small.png"
+set title "50 plus petites usines - $TITLE_SUFFIX"
+set ylabel "$YLABEL"
+set xlabel "Identifiant usine"
+plot "small_$OPTION.dat" using 2:xtic(1) notitle with histograms lc rgb "blue"
 
-set output "histo_big.png"
-set title "10 plus grandes usines"
-plot "big.dat" using 2:xtic(1) title "Volume"
+set output "vol_${OPTION}_big.png"
+set title "10 plus grandes usines - $TITLE_SUFFIX"
+set ylabel "$YLABEL"
+set xlabel "Identifiant usine"
+plot "big_$OPTION.dat" using 2:xtic(1) notitle with histograms lc rgb "red"
 EOF
 
-echo "Histogrammes générés avec succès"
+
+
+
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+echo "Durée totale d'exécution : ${DURATION} ms"
+
+exit 0
