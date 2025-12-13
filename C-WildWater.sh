@@ -8,6 +8,7 @@ fi
 DATA_FILE="$1"
 ACTION="$2"
 OPTION="$3"
+#
 
 if [ ! -f "$DATA_FILE" ]; then
     echo "Erreur : fichier $DATA_FILE introuvable"
@@ -29,19 +30,19 @@ fi
 TMP_FILE="filtered_$OPTION.tmp"
 
 if [ "$OPTION" = "src" ]; then
-    # On garde uniquement les lignes SOURCE -> USINE
-    grep "Spring" "$DATA_FILE" | \
-    awk -F';' '{print $3 ";" $4}' > "$TMP_FILE"
+    #MAUVAIS GREP A REVOIR 
+    grep "Spring" "$DATA_FILE" | awk -F';' '{print $3 ";" $4}' > "$TMP_FILE"
+    
 
 elif [ "$OPTION" = "real" ]; then
-    # SOURCE -> USINE + taux de fuite
-    grep "Spring" "$DATA_FILE" | \
-    awk -F';' '{print $3 ";" $4 ";" $5}' > "$TMP_FILE"
+    #MAUVAIS GREP A REVOIR
+    grep "Spring" "$DATA_FILE" | awk -F';' '{print $3 ";" $4 ";" $5}' > "$TMP_FILE"
+    
 
 elif [ "$OPTION" = "max" ]; then
-    # Données concernant les usines
-    grep "Facility complex" "$DATA_FILE" | \
-    awk -F';' '{print $2 ";" $4}' > "$TMP_FILE"
+    #MAUVAIS GREP A REVOIR
+    grep "Facility complex" "$DATA_FILE" | awk -F';' '{print $2 ";" $4}' > "$TMP_FILE"
+    
 fi
 
 #apelle du c
