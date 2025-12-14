@@ -58,12 +58,12 @@ if [ "$OPTION" = "src" ]; then
 
 elif [ "$OPTION" = "real" ]; then
     #MAUVAIS GREP A REVOIR
-    grep "^-;Spring #[^;]*;Facility complex #[^;]*;[^;]*;[^;]*$" "$DATA_FILE | awk -F';' '{print $3 ";" $4 ";" $5}' > "$TMP_FILE"
+    grep "^-;Spring #[^;]*;Facility complex #[^;]*;[^;]*;[^;]*$" "$DATA_FILE" | awk -F';' '{print $3 ";" $4 ";" $5}' > "$TMP_FILE"
     
 
 elif [ "$OPTION" = "max" ]; then
     # ;-;identifiant;-;capacite max;-;
-     grep "^-;Facility complexe #[^;]*;-;[^;]*;-" "$DATA_FILE" | awk -F';' '{print $2 ";" $4}' > "$TMP_FILE" 
+     grep "^-;Facility complex #[^;]*;-;[^;]*;-" "$DATA_FILE" | awk -F';' '{print $2 ";" $4}' > "$TMP_FILE" 
     
 fi
 
@@ -73,7 +73,7 @@ if [ ! -s "$TMP_FILE" ]; then
         exit 1
     fi
 OUTPUT_FILE="vol_$OPTION.dat"
-./wildwater "$OPTION" "$TMP_FILE" "$OUTPUT_File"
+./wildwater "$OPTION" "$TMP_FILE" "$OUTPUT_FILE"
 
 if [ "$?" -ne 0 ]; then
     echo "Erreur lors de l'exécution du programme C"
