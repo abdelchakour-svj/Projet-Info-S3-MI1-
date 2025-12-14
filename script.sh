@@ -5,8 +5,11 @@ START_TIME=$(date +%s%3N)
 
 
 if [ "$#" -lt 2 ]; then
-    echo "Erreur : Nb argument insufisant "
-    echo "expliquer cm faire a revoir "
+    echo "Erreur : Nombre d'arguments insuffisant"
+    echo "Usage : $0 <fichier.dat> <action> [options]"
+    echo "Actions disponibles :"
+    echo "  histo {max|src|real}     - Génère des histogrammes"
+    echo "  leaks \"<identifiant>\"  - Calcule les fuites d'une usine"
     exit 1
 fi
 
@@ -34,7 +37,8 @@ fi
 
 if [ "$ACTION" = "histo" ]; then
     if [ "$#" -ne 3 ]; then
-    echo "Erreur : VEUILLEZ CHOISIR UNE OPTION {max|src|real}"
+    echo "Erreur : l'action 'histo' nécessite une option"
+    echo "Options disponibles : {max, src, real}"
     exit 1
 fi
 
@@ -119,14 +123,9 @@ EOF
 
 # A FAIRE URGENT
 if [ $? -eq 0 ]; then
-        echo "Histogrammes générés avec succès : vol_${OPTION}_small.png et vol_${OPTION}_big.png"
-    else
-        echo "Erreur lors de la génération des graphiques"
-        exit 1
-    fi
-
-if [ $? -eq 0 ]; then
-        echo "Histogrammes générés avec succès : vol_${OPTION}_small.png et vol_${OPTION}_big.png"
+        echo "Histogrammes générés avec succès : "
+        echo "  - vol_${OPTION}_small.png (50 plus petites usines)"
+        echo "  - vol_${OPTION}_big.png (10 plus grandes usines)"
     else
         echo "Erreur lors de la génération des graphiques"
         exit 1
@@ -141,25 +140,25 @@ elif [ "$ACTION" = "leaks" ]; then
         exit 1
     fi
     
-    FACILITY_ID="$3"
-
+FACILITY_ID="$3"
 OUTPUT_FILE="leaks.dat"
-    ./wildwater "leaks" "$DATA_FILE" "$FACILITY_ID" "$OUTPUT_FILE"
+
+ ./wildwater "leaks" "$DATA_FILE" "$FACILITY_ID" "$OUTPUT_FILE"
     
-    if [ $? -ne 0 ]; then
-        echo "Erreur lors de l'exécution du programme C"
-        exit 1
-    fi
+if [ $? -ne 0 ]; then
+    echo "Erreur lors de l'exécution du programme C"
+    exit 1
+fi
     
-    echo "Calcul des fuites terminé. Résultat dans $OUTPUT_FILE"
+echo "Calcul des fuites terminé. Résultat dans $OUTPUT_FILE"
 
 else
     echo "Erreur : action invalide ($ACTION)"
-    echo "Actions supportées : histo, leaks"
+    echo "Actions supportées : histo ou leaks"
     exit 1
 fi
 #RM FICHIER TEMP INUTILE 
-rm -f sorted_temp.dat small_$OPTION.dat big_$OPTION.dat
+rm -f "$TMP_FILE" sorted_temp.dat "small_$OPTION.dat" "big_$OPTION.dat"
 
 
 
