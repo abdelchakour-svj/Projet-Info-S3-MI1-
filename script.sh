@@ -118,10 +118,48 @@ plot "big_$OPTION.dat" using 2:xtic(1) notitle with histograms lc rgb "red"
 EOF
 
 # A FAIRE URGENT
-#ajouter un truc pour verif histogramme 
-#CALCUL FUITE
-#RM FICHIER TEMP INUTILE 
+if [ $? -eq 0 ]; then
+        echo "Histogrammes générés avec succès : vol_${OPTION}_small.png et vol_${OPTION}_big.png"
+    else
+        echo "Erreur lors de la génération des graphiques"
+        exit 1
+    fi
 
+if [ $? -eq 0 ]; then
+        echo "Histogrammes générés avec succès : vol_${OPTION}_small.png et vol_${OPTION}_big.png"
+    else
+        echo "Erreur lors de la génération des graphiques"
+        exit 1
+    fi
+
+
+elif [ "$ACTION" = "leaks" ]; then
+    # Vérification du 3ème argument (identifiant de l'usine)
+    if [ "$#" -ne 3 ]; then
+        echo "Erreur : l'action 'leaks' nécessite un identifiant d'usine"
+        echo "Usage : $0 <fichier.dat> leaks \"<identifiant usine>\""
+        exit 1
+    fi
+    
+    FACILITY_ID="$3"
+
+OUTPUT_FILE="leaks.dat"
+    ./wildwater "leaks" "$DATA_FILE" "$FACILITY_ID" "$OUTPUT_FILE"
+    
+    if [ $? -ne 0 ]; then
+        echo "Erreur lors de l'exécution du programme C"
+        exit 1
+    fi
+    
+    echo "Calcul des fuites terminé. Résultat dans $OUTPUT_FILE"
+
+else
+    echo "Erreur : action invalide ($ACTION)"
+    echo "Actions supportées : histo, leaks"
+    exit 1
+fi
+#RM FICHIER TEMP INUTILE 
+rm -f sorted_temp.dat small_$OPTION.dat big_$OPTION.dat
 
 
 
