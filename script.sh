@@ -20,8 +20,21 @@ if [ ! -f "$DATA_FILE" ]; then
     exit 1
 fi
 
-if [ "$ACTION" != "histo" ]; then
-    echo "Erreur : seule l'action 'histo' est supportée ici"
+if [ ! -f "./wildwater" ]; then
+    echo "Compilation du programme C..."
+    make
+    if [ $? -ne 0 ]; then
+        echo "Erreur : échec de la compilation"
+        exit 1
+    fi
+fi
+
+
+
+
+if [ "$ACTION" = "histo" ]; then
+    if [ "$#" -ne 3 ]; then
+    echo "Erreur : VEUILLEZ CHOISIR UNE OPTION {max|src|real}"
     exit 1
 fi
 
@@ -50,23 +63,37 @@ elif [ "$OPTION" = "max" ]; then
     
 fi
 
-#apelle du c
-
-./wildwater "$OPTION" "$TMP_FILE" result.dat
+if [ ! -s "$TMP_FILE" ]; then
+        echo "Erreur : aucune donnée filtrée pour l'option $OPTION"
+        rm -f "$TMP_FILE"
+        exit 1
+    fi
+OUTPUT_FILE="vol_$OPTION.dat"
+./wildwater "$OPTION" "$TMP_FILE" "$OUTPUT_File"
 
 if [ "$?" -ne 0 ]; then
     echo "Erreur lors de l'exécution du programme C"
     exit 1
 fi
 
-#gnuplot graph chatgpt a revoir
-
-
+sort -t';' -k1 -r "$OUTPUT_FILE" > sorted_temp.dat
 # 50 plus petites valeurs
-sort -t';' -k2 -n result.dat | head -n 50 > small.dat
+sort -t';' -k2 -n sorted_temp.dat | head -n 50 > small_$OPTION.dat
 
 # 10 plus grandes valeurs
-sort -t';' -k2 -nr result.dat | head -n 10 > big.dat
+sort -t';' -k2 -nr sorted_temp.dat | head -n 10 > big_$OPTION.dat
+
+if [ "$OPTION" = "max" ]; then
+        YLABEL="Volume (k.m³.year⁻¹)"
+        TITLE_SUFFIX="Capacité maximale"
+    elif [ "$OPTION" = "src" ]; then
+        YLABEL="Volume (k.m³.year⁻¹)"
+        TITLE_SUFFIX="Volume capté"
+    else
+        YLABEL="Volume (k.m³.year⁻¹)"
+        TITLE_SUFFIX="Volume traité"
+    fi
+
 
 gnuplot <<EOF
 set terminal png size 1400,900
@@ -89,6 +116,11 @@ set ylabel "$YLABEL"
 set xlabel "Identifiant usine"
 plot "big_$OPTION.dat" using 2:xtic(1) notitle with histograms lc rgb "red"
 EOF
+
+# A FAIRE URGENT
+#ajouter un truc pour verif histogramme 
+#CALCUL FUITE
+#RM FICHIER TEMP INUTILE 
 
 
 
