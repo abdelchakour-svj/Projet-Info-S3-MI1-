@@ -38,7 +38,7 @@ fi
 if [ "$ACTION" = "histo" ]; then
     if [ "$#" -ne 3 ]; then
     echo "Erreur : l'action 'histo' nécessite une option"
-    echo "Options disponibles : {max, src, real}"
+    echo "Usage : $0 <fichier.dat> histo {max|src|real}"
     exit 1
 fi
 
@@ -80,12 +80,12 @@ if [ "$?" -ne 0 ]; then
     exit 1
 fi
 
-sort -t';' -k1 -r "$OUTPUT_FILE" > sorted_temp.dat
+sort -t';' -k1 -r "$OUTPUT_FILE" -o "$OUTPUT_FILE"
 # 50 plus petites valeurs
-sort -t';' -k2 -n sorted_temp.dat | head -n 50 > small_$OPTION.dat
+sort -t';' -k2 -n "$OUTPUT_FILE" | head -n 50 > "small_$OPTION.dat"
 
 # 10 plus grandes valeurs
-sort -t';' -k2 -nr sorted_temp.dat | head -n 10 > big_$OPTION.dat
+sort -t';' -k2 -nr "$OUTPUT_FILE" | head -n 10 > "big_$OPTION.dat"
 
 if [ "$OPTION" = "max" ]; then
         YLABEL="Volume (k.m³.year⁻¹)"
@@ -131,7 +131,16 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 
+rm -f "$TMP_FILE" "small_$OPTION.dat" "big_$OPTION.dat"
 
+
+
+
+
+
+
+
+    
 elif [ "$ACTION" = "leaks" ]; then
     # Vérification du 3ème argument (identifiant de l'usine)
     if [ "$#" -ne 3 ]; then
@@ -142,15 +151,30 @@ elif [ "$ACTION" = "leaks" ]; then
     
 FACILITY_ID="$3"
 OUTPUT_FILE="leaks.dat"
+TEMP_LEAK="temp_leak.dat"
 
- ./wildwater "leaks" "$DATA_FILE" "$FACILITY_ID" "$OUTPUT_FILE"
+if [ ! -f "$OUTPUT_FILE" ]; then
+        echo "identifier;Leak volume (M.m³.year⁻¹)" > "$OUTPUT_FILE"
+    fi
+    
+ ./wildwater "leaks" "$DATA_FILE" "$FACILITY_ID" "$TEMP_LEAK"
     
 if [ $? -ne 0 ]; then
     echo "Erreur lors de l'exécution du programme C"
+    rm -f "$TEMP_LEAK"
     exit 1
 fi
-    
+
+cat "$TEMP_LEAK" >> "$OUTPUT_FILE"
+rm -f "$TEMP_LEAK"
+
 echo "Calcul des fuites terminé. Résultat dans $OUTPUT_FILE"
+
+
+
+
+
+
 
 else
     echo "Erreur : action invalide ($ACTION)"
@@ -158,7 +182,6 @@ else
     exit 1
 fi
 #RM FICHIER TEMP INUTILE 
-rm -f "$TMP_FILE" sorted_temp.dat "small_$OPTION.dat" "big_$OPTION.dat"
 
 
 
