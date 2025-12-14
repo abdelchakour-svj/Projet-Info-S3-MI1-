@@ -4,15 +4,16 @@
 START_TIME=$(date +%s%3N)
 
 
-if [ "$#" -ne 3 ]; then
-    echo "Veuillez suivre ce schéma : ./myScript.sh c-wildwater.dat histo {max|src|real}"
+if [ "$#" -lt 2 ]; then
+    echo "Erreur : Nb argument insufisant "
+    echo "expliquer cm faire a revoir "
     exit 1
 fi
 
 DATA_FILE="$1"
 ACTION="$2"
 OPTION="$3"
-#
+
 
 if [ ! -f "$DATA_FILE" ]; then
     echo "Erreur : fichier $DATA_FILE introuvable"
