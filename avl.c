@@ -1,28 +1,39 @@
-#include ... 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "avl.h"
 
-typedef struct AVL_struct{
-   int valeur;
-   int eq;
-   struct AVL_struct *fg;
-   struct AVL_struct *fd;
-// ajt id usine 
-}AVL;
+/* Retourne le max entre aet b */
+int max(int a, int b) {
+    if (a > b)
+        return a;
+    return b;
+}
 
-AVLNode* creer_noeud_avl(const char *identifiant) {
-    AVLNode *noeud = (AVLNode*)malloc(sizeof(AVLNode));
-    if (noeud == NULL) {
-        fprintf(stderr, "Erreur allocation mémoire\n");
+/* Retourne la hauteur d un noeud  */
+int hauteur(NoeudAVL *noeud) {
+    if (noeud == NULL)
+        return 0;
+    return noeud->hauteur;
+}
+
+/* facteur d'equilibre dun noeud */
+int equilibre(NoeudAVL *noeud) {
+    if (noeud == NULL)
+        return 0;
+    return hauteur(noeud->gauche) - hauteur(noeud->droite);
+}
+
+/* Cree un nouveau noeud avec les donnees de l'usine */
+NoeudAVL* creerNoeud(Usine usine) {
+    NoeudAVL *nouveau = (NoeudAVL*)malloc(sizeof(NoeudAVL));
+    if (nouveau == NULL) {
+        fprintf(stderr, "Erreur: allocation memoire echouee\n");
         return NULL;
     }
-    
-    noeud->identifiant = strdup(identifiant);
-    noeud->capacite_max = 0.0;
-    noeud->volume_capte = 0.0;
-    noeud->volume_traite = 0.0;
-    noeud->gauche = NULL;
-    noeud->droite = NULL;
-    noeud->hauteur = 1;
-    
-    return noeud;
-}}
-
+    nouveau->usine = usine;
+    nouveau->gauche = NULL;
+    nouveau->droite = NULL;
+    nouveau->hauteur = 1;
+    return nouveau;
+}
