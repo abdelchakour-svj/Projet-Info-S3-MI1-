@@ -1,15 +1,43 @@
-/*
- * arbre_distrib.c - Implementation de l'arbre de distribution
- * Projet C-Wildwater
- * 
- * L'arbre de distribution permet de calculer les fuites d'eau
- * dans tout le reseau aval d'une usine.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "arbre_distrib.h"
+
+
+// static permet de garder cette fonction dans ce fichier et eviter de melanger les fonctions
+
+static int maxInt(int a, int b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+
+static int minInt(int a, int b) {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+static int max3Int(int a, int b, int c) {
+    int maxAB = maxInt(a, b);  // maximum entre a et b
+
+    if (maxAB > c) {
+        return maxAB;
+    }
+    return c;
+}
+
+static int min3Int(int a, int b, int c) {
+    int minAB = minInt(a, b);  // minimum entre a et b
+
+    if (minAB < c) {
+        return minAB;
+    }
+    return c;
+}
+
 
 /* Cree un nouveau noeud de distribution */
 NoeudDistrib* creerNoeudDistrib(char *id, double fuite) {
