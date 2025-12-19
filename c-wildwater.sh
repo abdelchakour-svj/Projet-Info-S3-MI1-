@@ -88,9 +88,8 @@ fi
 
 cd "$SCRIPT_DIR" || erreur "Impossible de revenir au repertoire principal"
 
-# =============================================================================
 # Traitement selon la commande
-# =============================================================================
+
 
 f [ "$COMMANDE" = "histo" ]; then
     
@@ -114,9 +113,7 @@ f [ "$COMMANDE" = "histo" ]; then
         
         echo "Fichier de sortie: $FICHIER_SORTIE"
         
-        # =================================================================
         # Filtrage des donnees avec grep et awk
-        # =================================================================
         echo "Filtrage des donnees avec grep/awk..."
         
         # Extraire les lignes des usines (description de capacite)
@@ -148,14 +145,14 @@ f [ "$COMMANDE" = "histo" ]; then
         erreur "Aucune donnee n'a pu etre extraite du fichier"
     fi
 
-
+    
         
         # Appeler le programme C avec les donnees filtrees
         echo "Execution du programme C..."
         ""$CODE_C_DIR/wildwater" histo "$OPTION" "$DONNEES_FILTREES" "$FICHIER_SORTIE"
         
         if [ $? -ne 0 ]; then
-            rm -f "$DONNEES_FILTREES" "$TEMP_DIR"/*.csv
+            rm -f "$DONNEES_FILTREES" "$TEMP_DIR"/*.csv"
             erreur "Le programme C a retourne une erreur"
         fi
 
@@ -166,152 +163,143 @@ f [ "$COMMANDE" = "histo" ]; then
             erreur "Le fichier de sortie n'a pas ete cree"
         fi
         
+       
+        
+          echo "Preparation des donnees pour les graphiques..."
+    
         FICHIER_PETITES="$TEMP_DIR/petites_$OPTION.dat"
-        FICHIER_GRANDES="$TEMP_DIR/grandes_$OPTION.dat"
+        FICHIER_GRANDES="$TEMP_DIR/grandes_$OPTION.dat""
         
-        # Compter le nombre de lignes (sans l'en-tete) avec awk
-        NB_LIGNES=$(awk 'NR>1' "$FICHIER_SORTIE" | wc -l)
-        echo "Nombre d'usines: $NB_LIGNES"
+         if [ "$OPTION" = "all" ]; then
+        # Mode bonus : trier par le total des 3 colonnes
+        awk -F';' 'NR>1 {total=$2+$3+$4; print $0";"total}' "$FICHIER_SORTIE" | \
+            sort -t';' -k5 -n | head -50 | \
+            awk -F';' '{print $1";"$2";"$3";"$4}' > "$FICHIER_PETITES"
         
-        # Preparer les fichiers pour les 10 plus grandes et 50 plus petites
-        FICHIER_HIGH="$TEMP_DIR/temp_high.dat"
-        FICHIER_LOW="$TEMP_DIR/temp_low.dat"
+        awk -F';' 'NR>1 {total=$2+$3+$4; print $0";"total}' "$FICHIER_SORTIE" | \
+            sort -t';' -k5 -nr | head -10 | \
+            awk -F';' '{print $1";"$2";"$3";"$4}' > "$FICHIER_GRANDES"
+    else
         
-        if [ "$OPTION" = "all" ]; then
-            # Mode all: 4 colonnes (id;real;lost;available)
-            # Utiliser awk pour calculer le total et trier
-            awk -F';' 'NR>1 {
-                total = $2 + $3 + $4
-                print $0 ";" total
-            }' "$FICHIER_SORTIE" | sort -t';' -k5 -n -r | head -10 | \
-                awk -F';' '{print $1";"$2";"$3";"$4}' > "$FICHIER_HIGH"
-            
-            awk -F';' 'NR>1 {
-                total = $2 + $3 + $4
-                print $0 ";" total
-            }' "$FICHIER_SORTIE" | sort -t';' -k5 -n | head -50 | \
-                awk -F';' '{print $1";"$2";"$3";"$4}' > "$FICHIER_LOW"
-        else
-            # Mode simple: 2 colonnes (id;valeur)
-            # Utiliser awk pour ignorer l'en-tete puis trier
-            awk -F';' 'NR>1 {print $1";"$2}' "$FICHIER_SORTIE" | \
-                sort -t';' -k2 -n -r | head -10 > "$FICHIER_HIGH"
-            
-            awk -F';' 'NR>1 {print $1";"$2}' "$FICHIER_SORTIE" | \
-                sort -t';' -k2 -n | head -50 > "$FICHIER_LOW"
-        fi
+		# Enlever CR éventuels + ignorer en-tête + ignorer les zéros
+	awk -F';' 'NR>1 && ($2+0) > 0 { gsub(/\r/,"",$0); print }' "$FICHIER_SORTIE" \
+	| LC_ALL=C sort -t';' -k2,2g \
+	| head -50 > "$FICHIER_PETITES"
+
+	awk -F';' 'NR>1 && ($2+0) > 0 { gsub(/\r/,"",$0); print }' "$FICHIER_SORTIE" \
+	| LC_ALL=C sort -t';' -k2,2gr \
+	| head -10 > "$FICHIER_GRANDES"
+
+    fi
         
         # Definir le titre selon le mode
         case "$OPTION" in
-            max)
-                TITRE="Capacite maximale de traitement"
-                YLABEL="Volume (M.m3)"
-                ;;
-            src)
-                TITRE="Volume capte par les sources"
-                YLABEL="Volume (M.m3)"
-                ;;
-            real)
-                TITRE="Volume reellement traite"
-                YLABEL="Volume (M.m3)"
-                ;;
-            all)
-                TITRE="Donnees combinees des usines"
-                YLABEL="Volume (M.m3)"
-                ;;
-        esac
-        
-        # Generer le graphique des 10 plus grandes
-        echo "Generation du graphique des 10 plus grandes usines..."
-        
-        if [ "$OPTION" = "all" ]; then
-            # Graphique empile pour le mode all
-            gnuplot << EOF
-set terminal pngcairo size 1200,800 enhanced font 'Arial,12'
-set output '$IMAGE_HIGH'
-set title 'Plant data (10 greatest)' font ',16'
-set xlabel 'Plant IDs'
-set ylabel '$YLABEL'
+        max)
+            YLABEL="Volume (M.m3.year-1)"
+            TITRE="Capacite maximale de traitement"
+            ;;
+        src)
+            YLABEL="Volume (M.m3.year-1)"
+            TITRE="Volume capte par les sources"
+            ;;
+        real)
+            YLABEL="Volume (M.m3.year-1)"
+            TITRE="Volume reellement traite"
+            ;;
+        all)
+            YLABEL="Volume (M.m3.year-1)"
+            TITRE="Donnees combinees (reel, perdu, disponible)"
+            ;;
+    esac
+    echo "Generation des graphiques avec gnuplot..."
+    
+    if [ "$OPTION" = "all" ]; then
+        # Graphiques empiles pour le mode bonus
+        gnuplot <<EOF
+set terminal png size 1400,900
+set datafile separator ";"
 set style data histogram
 set style histogram rowstacked
 set style fill solid border -1
 set boxwidth 0.8
-set datafile separator ';'
-set xtics rotate by -45
+set xtics rotate by -45 font ",8"
+set grid y
 set key outside right top
-set grid y
 
-plot '$FICHIER_HIGH' using 2:xtic(1) title 'Real volume' linecolor rgb '#6699FF', \
-     '' using 3 title 'Lost volume' linecolor rgb '#FF6666', \
-     '' using 4 title 'Available capacity' linecolor rgb '#99FF99'
+set output "$GRAPHS_DIR/vol_${OPTION}_small.png"
+set title "50 plus petites usines - $TITRE"
+set ylabel "$YLABEL"
+set xlabel "Identifiant de l'usine"
+plot "$FICHIER_PETITES" using 2:xtic(1) title "Volume reel" lc rgb "#6699FF", \
+     '' using 3 title "Volume perdu" lc rgb "#FF6666", \
+     '' using 4 title "Capacite disponible" lc rgb "#99FF99"
+
+set output "$GRAPHS_DIR/vol_${OPTION}_big.png"
+set title "10 plus grandes usines - $TITRE"
+set ylabel "$YLABEL"
+set xlabel "Identifiant de l'usine"
+plot "$FICHIER_GRANDES" using 2:xtic(1) title "Volume reel" lc rgb "#6699FF", \
+     '' using 3 title "Volume perdu" lc rgb "#FF6666", \
+     '' using 4 title "Capacite disponible" lc rgb "#99FF99"
 EOF
-        else
-            # Graphique simple
-            gnuplot << EOF
-set terminal pngcairo size 1200,800 enhanced font 'Arial,12'
-set output '$IMAGE_HIGH'
-set title 'Plant data (10 greatest)' font ',16'
-set xlabel 'Plant IDs'
-set ylabel '$YLABEL'
-set style data histogram
-set style histogram cluster gap 1
+    else
+        # Graphiques simples pour les modes max, src, real
+        gnuplot <<EOF
+set terminal png size 1400,900
+set datafile separator ";"
+set style data histograms
 set style fill solid border -1
-set boxwidth 0.8
-set datafile separator ';'
-set xtics rotate by -45
+set boxwidth 0.9
+set xtics rotate by -45 font ",8"
 set grid y
 
-plot '$FICHIER_HIGH' using 2:xtic(1) title '$TITRE' linecolor rgb '#4477AA'
-EOF
-        fi
-        
-        if [ $? -eq 0 ]; then
-            echo "  -> $IMAGE_HIGH cree"
-        else
-            echo "  -> Erreur lors de la creation du graphique"
-        fi
-        
-        # Generer le graphique des 50 plus petites
-        echo "Generation du graphique des 50 plus petites usines..."
-        
-        if [ "$OPTION" = "all" ]; then
-            gnuplot << EOF
-set terminal pngcairo size 1600,800 enhanced font 'Arial,10'
-set output '$IMAGE_LOW'
-set title 'Plant data (50 lowest)' font ',16'
-set xlabel 'Plant IDs'
-set ylabel '$YLABEL'
-set style data histogram
-set style histogram rowstacked
-set style fill solid border -1
-set boxwidth 0.8
-set datafile separator ';'
-set xtics rotate by -90 font ',8'
-set key outside right top
-set grid y
+set output "$GRAPHS_DIR/vol_${OPTION}_small.png"
+set title "50 plus petites usines - $TITRE"
+set ylabel "$YLABEL"
+set xlabel "Identifiant de l'usine"
+plot "$FICHIER_PETITES" using 2:xtic(1) notitle with histograms lc rgb "blue"
 
-plot '$FICHIER_LOW' using 2:xtic(1) title 'Real volume' linecolor rgb '#6699FF', \
-     '' using 3 title 'Lost volume' linecolor rgb '#FF6666', \
-     '' using 4 title 'Available capacity' linecolor rgb '#99FF99'
+set output "$GRAPHS_DIR/vol_${OPTION}_big.png"
+set title "10 plus grandes usines - $TITRE"
+set ylabel "$YLABEL"
+set xlabel "Identifiant de l'usine"
+plot "$FICHIER_GRANDES" using 2:xtic(1) notitle with histograms lc rgb "red"
 EOF
-        else
-            gnuplot << EOF
-set terminal pngcairo size 1600,800 enhanced font 'Arial,10'
-set output '$IMAGE_LOW'
-set title 'Plant data (50 lowest)' font ',16'
-set xlabel 'Plant IDs'
-set ylabel '$YLABEL'
-set style data histogram
-set style histogram cluster gap 1
-set style fill solid border -1
-set boxwidth 0.8
-set datafile separator ';'
-set xtics rotate by -90 font ',8'
-set grid y
+    fi
 
-plot '$FICHIER_LOW' using 2:xtic(1) title '$TITRE' linecolor rgb '#4477AA'
-EOF
-        fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+        
         
         if [ $? -eq 0 ]; then
             echo "  -> $IMAGE_LOW cree"
@@ -331,9 +319,7 @@ EOF
         echo "  - $IMAGE_LOW"
         ;;
     
-    # =========================================================================
     # Commande LEAKS - Calcul des fuites
-    # =========================================================================
     leaks)
         echo ""
         echo "=== Traitement: Calcul des fuites ==="
@@ -350,9 +336,7 @@ EOF
         FICHIER_SORTIE="$TESTS_DIR/leaks.dat"
         FICHIER_FILTRE="$TEMP_DIR/donnees_usine.csv"
         
-        # =================================================================
         # Filtrage des donnees avec grep pour cette usine specifique
-        # =================================================================
         echo "Filtrage des donnees pour l'usine $ID_USINE..."
         
         # Extraire les captages vers cette usine (source -> usine)
@@ -409,9 +393,7 @@ EOF
         awk 'END {print}' "$FICHIER_SORTIE"
         ;;
     
-    # =========================================================================
     # Commande inconnue
-    # =========================================================================
     *)
         erreur "Commande inconnue: $COMMANDE (valides: histo, leaks)"
         ;;
