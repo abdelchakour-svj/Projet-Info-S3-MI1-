@@ -268,7 +268,7 @@ EOF
     fi
 
 
-
+# a adaapter le truc du fin la parce pas kr utiliser version finale ultime 
 
 
 
