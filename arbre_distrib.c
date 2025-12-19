@@ -39,50 +39,50 @@ static int min3Int(int a, int b, int c) {
 }
 
 
-/* Cree un nouveau noeud de distribution */
-NoeudDistrib* creerNoeudDistrib(char *id, double fuite) {
-    NoeudDistrib *nouveau = (NoeudDistrib*)malloc(sizeof(NoeudDistrib));
+Arbre* creerArbre(char *nom, float fuite) {
+    Arbre *nouveau = (Arbre*)malloc(sizeof(Arbre));
     if (nouveau == NULL) {
-        fprintf(stderr, "Erreur: allocation memoire echouee\n");
-        return NULL;
+        fprintf(stderr, "Erreur: allocation memoire echouee pour Arbre\n");
+        exit(EXIT_FAILURE);
     }
-    strncpy(nouveau->identifiant, id, 49);
-    nouveau->identifiant[49] = '\0';
-    nouveau->pourcentage_fuite = fuite;
-    nouveau->volume_entrant = 0.0;
+    strncpy(nouveau->nom, nom, 99);
+    nouveau->nom[99] = '\0';
+    nouveau->litre = 0.0f;
+    nouveau->fuite_cumule = fuite;
+    nouveau->nombre_enfant = 0;
     nouveau->enfant = NULL;
-    nouveau->frere = NULL;
     return nouveau;
 }
 
-/* Ajoute un enfant a un noeud parent */
-void ajouterEnfant(NoeudDistrib *parent, NoeudDistrib *enfant) {
+
+static Chainon* creerChainon(Arbre *a) {
+    Chainon *nouveau = (Chainon*)malloc(sizeof(Chainon));
+    if (nouveau == NULL) {
+        fprintf(stderr, "Erreur: allocation memoire echouee pour Chainon\n");
+        exit(EXIT_FAILURE);
+    }
+    nouveau->a = a;
+    nouveau->suivant = NULL;
+    return nouveau;
+}
+
+
+
+void ajouterEnfant(Arbre *parent, Arbre *enfant) {
+    Chainon *nouveau;
+    
     if (parent == NULL || enfant == NULL)
         return;
 
-    if (parent->enfant == NULL) {
-        /* Premier enfant */
-        parent->enfant = enfant;
-    } else {
-        /* Ajouter en tete de la liste des freres */
-        enfant->frere = parent->enfant;
-        parent->enfant = enfant;
-    }
-}
 
+    nouveau = creerChainon(enfant);
+
+    
+    nouveau->suivant = parent->enfant;
+    parent->enfant = nouveau;
+    parent->nombre_enfant++;
+}
 /* ========== AVL d'index pour recherche rapide ========== */
-
-/* Retourne le max de deux entiers */
-static int maxIndex(int a, int b) {
-    return (a > b) ? a : b;
-}
-
-/* Retourne la hauteur d'un noeud d'index */
-static int hauteurIndex(NoeudIndex *n) {
-    if (n == NULL)
-        return 0;
-    return n->hauteur;
-}
 
 /* Cree un nouveau noeud d'index */
 NoeudIndex* creerNoeudIndex(char *id, NoeudDistrib *pointeur) {
@@ -201,47 +201,36 @@ NoeudDistrib* rechercherIndex(NoeudIndex *racine, char *id) {
         return rechercherIndex(racine->droite, id);
 }
 
-/* 
- * Calcule les fuites totales dans l'arbre de distribution
- * volume_initial: volume d'eau qui entre dans le noeud racine
- * Retourne le total des fuites en M.m3
- */
-double calculerFuites(NoeudDistrib *racine, double volume_initial) {
-    double fuites = 0.0;
-    double volume_apres_fuite;
-    double volume_par_enfant;
-    int nb_enfants = 0;
-    NoeudDistrib *enfant;
+
+float calculerFuites(Arbre *racine, float volume_initial) {
+    float fuites = 0.0f;
+    float volume_apres_fuite;
+    float volume_par_enfant;
+    Chainon *c;
 
     if (racine == NULL)
-        return 0.0;
+        return 0.0f;
 
-    /* Le volume entrant est celui recu du parent */
-    racine->volume_entrant = volume_initial;
 
-    /* Calculer la fuite sur ce troncon */
-    fuites = volume_initial * (racine->pourcentage_fuite / 100.0);
+    racine->litre = volume_initial;
+
+
+    fuites = volume_initial * (racine->fuite_cumule / 100.0f);
     volume_apres_fuite = volume_initial - fuites;
 
-    /* Compter le nombre d'enfants */
-    enfant = racine->enfant;
-    while (enfant != NULL) {
-        nb_enfants++;
-        enfant = enfant->frere;
-    }
 
-    /* Repartir equitablement le volume entre les enfants */
-    if (nb_enfants > 0) {
-        volume_par_enfant = volume_apres_fuite / nb_enfants;
-        enfant = racine->enfant;
-        while (enfant != NULL) {
-            fuites += calculerFuites(enfant, volume_par_enfant);
-            enfant = enfant->frere;
+    if (racine->nombre_enfant > 0) {
+        volume_par_enfant = volume_apres_fuite / racine->nombre_enfant;
+        
+     
+        c = racine->enfant;
+        while (c != NULL) {
+            fuites += calculerFuites(c->a, volume_par_enfant);
+            c = c->suivant;
         }
     }
 
     return fuites;
-}
 
 /* Libere l'arbre de distribution */
 void libererArbreDistrib(NoeudDistrib *racine) {
