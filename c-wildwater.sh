@@ -92,29 +92,25 @@ cd "$SCRIPT_DIR" || erreur "Impossible de revenir au repertoire principal"
 # Traitement selon la commande
 # =============================================================================
 
-case "$COMMANDE" in
-    # =========================================================================
-    # Commande HISTO - Generation d'histogrammes
-    # =========================================================================
-    histo)
-        echo ""
-        echo "=== Traitement: Histogramme ==="
-        
-        # Verifier le mode
-        case "$OPTION" in
-            max|src|real|all)
-                echo "Mode: $OPTION"
-                ;;
-            *)
-                erreur "Mode invalide: $OPTION (valides: max, src, real, all)"
-                ;;
-        esac
+f [ "$COMMANDE" = "histo" ]; then
+    
+    # Verification que l'option est bien fournie
+    if [ "$#" -ne 3 ]; then
+        erreur "La commande 'histo' necessite une option (max, src, real )"
+    fi
+    
+    # Verification que l'option est valide
+    if [[ "$OPTION" != "max" && "$OPTION" != "src" && "$OPTION" != "real" && "$OPTION" != "all" ]]; then
+        erreur "Option invalide : '$OPTION'. Options valides : max, src, real "
+    fi
+    
+    echo ""
+    echo " Generation d'histogramme : mode $OPTION "
+    
         
         # Definir les noms de fichiers
-        FICHIER_SORTIE="$TESTS_DIR/histo_${OPTION}.dat"
-        FICHIER_FILTRE="$TEMP_DIR/donnees_filtrees.csv"
-        IMAGE_HIGH="$GRAPHS_DIR/histo_${OPTION}_high.png"
-        IMAGE_LOW="$GRAPHS_DIR/histo_${OPTION}_low.png"
+        DONNEES_FILTREES="$TEMP_DIR/donnees_filtrees.csv"
+        FICHIER_SORTIE="$TESTS_DIR/vol_$OPTION.dat"
         
         echo "Fichier de sortie: $FICHIER_SORTIE"
         
@@ -127,15 +123,15 @@ case "$COMMANDE" in
         # Format: -;Usine;-;capacite;-
         # On utilise grep pour filtrer les lignes qui contiennent Plant, Module, Unit ou Facility
         echo "  -> Extraction des usines..."
-        grep -E "^-;(Plant|Module|Unit|Facility)" "$FICHIER_DONNEES" | \
+        grep -E "^-;(Plant #|Module #|Unit #|Facility complex #)" "$FICHIER_DONNEES" | \
             grep -E ";-;[0-9]+;-$" > "$TEMP_DIR/usines.csv"
         
         # Extraire les lignes de captage (source -> usine)
         # Format: -;Source;Usine;volume;pourcentage
         # Les sources sont: Source, Well, Spring, Fountain, Resurgence
-        echo "  -> Extraction des captages..."
-        grep -E "^-;(Source|Well|Spring|Fountain|Resurgence)" "$FICHIER_DONNEES" | \
-            grep -E ";(Plant|Module|Unit|Facility)" > "$TEMP_DIR/captages.csv"
+        echo "  -> Extraction des volumes captes par les sources..."
+        grep -E "^-;(Source #|Well #|Well field #|Spring #|Fountain #|Resurgence #)" "$FICHIER_DONNEES" | \
+        grep -E ";(Plant #|Module #|Unit #|Facility complex #)" > "$TEMP_DIR/captages.csv"
         
         # Compter les lignes extraites
         NB_USINES=$(wc -l < "$TEMP_DIR/usines.csv")
@@ -144,29 +140,34 @@ case "$COMMANDE" in
         echo "  -> $NB_CAPTAGES captages trouves"
         
         # Combiner les fichiers pour le programme C
-        cat "$TEMP_DIR/usines.csv" "$TEMP_DIR/captages.csv" > "$FICHIER_FILTRE"
+        cat "$TEMP_DIR/usines.csv" "$TEMP_DIR/captages.csv" > "$DONNEES_FILTREES"
+
+         # Verification que des donnees ont bien ete extraites
+    if [ ! -s "$DONNEES_FILTREES" ]; then
+        rm -f "$DONNEES_FILTREES" "$TEMP_DIR"/*.csv
+        erreur "Aucune donnee n'a pu etre extraite du fichier"
+    fi
+
+
         
         # Appeler le programme C avec les donnees filtrees
         echo "Execution du programme C..."
-        "$CODE_C_DIR/wildwater" histo "$OPTION" "$FICHIER_FILTRE" "$FICHIER_SORTIE"
-        RETOUR=$?
+        ""$CODE_C_DIR/wildwater" histo "$OPTION" "$DONNEES_FILTREES" "$FICHIER_SORTIE"
         
-        if [ $RETOUR -ne 0 ]; then
-            erreur "Le programme C a retourne une erreur (code: $RETOUR)"
+        if [ $? -ne 0 ]; then
+            rm -f "$DONNEES_FILTREES" "$TEMP_DIR"/*.csv
+            erreur "Le programme C a retourne une erreur"
         fi
+
+        echo "Traitement des donnees termine avec succes"
         
         # Verifier que le fichier de sortie a ete cree
         if [ ! -f "$FICHIER_SORTIE" ]; then
             erreur "Le fichier de sortie n'a pas ete cree"
         fi
         
-        echo "Donnees generees avec succes"
-        
-        # =================================================================
-        # Generation des graphiques avec gnuplot
-        # =================================================================
-        echo ""
-        echo "=== Generation des graphiques ==="
+        FICHIER_PETITES="$TEMP_DIR/petites_$OPTION.dat"
+        FICHIER_GRANDES="$TEMP_DIR/grandes_$OPTION.dat"
         
         # Compter le nombre de lignes (sans l'en-tete) avec awk
         NB_LIGNES=$(awk 'NR>1' "$FICHIER_SORTIE" | wc -l)
