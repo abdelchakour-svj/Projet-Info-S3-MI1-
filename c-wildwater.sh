@@ -302,32 +302,22 @@ EOF
         
         
         if [ $? -eq 0 ]; then
-            echo "  -> $IMAGE_LOW cree"
-        else
-            echo "  -> Erreur lors de la creation du graphique"
-        fi
+        echo "Graphiques generes avec succes :"
+        echo "  - $GRAPHS_DIR/vol_${OPTION}_small.png (50 plus petites usines)"
+        echo "  - $GRAPHS_DIR/vol_${OPTION}_big.png (10 plus grandes usines)"
+    else
+        erreur "Echec lors de la generation des graphiques avec gnuplot"
+    fi
         
         # Nettoyer les fichiers temporaires
-        rm -f "$FICHIER_HIGH" "$FICHIER_LOW"
-        rm -f "$TEMP_DIR/usines.csv" "$TEMP_DIR/captages.csv" "$FICHIER_FILTRE"
-        
-        echo ""
-        echo "=== Traitement termine avec succes ==="
-        echo "Fichier de donnees: $FICHIER_SORTIE"
-        echo "Graphiques:"
-        echo "  - $IMAGE_HIGH"
-        echo "  - $IMAGE_LOW"
-        ;;
+        rm -f "$DONNEES_FILTREES" "$FICHIER_PETITES" "$FICHIER_GRANDES" "$TEMP_DIR"/*.csv
+    
+    echo ""
+    echo "=== Traitement termine avec succes ==="
+    echo "Fichier de donnees : $FICHIER_SORTIE"
     
     # Commande LEAKS - Calcul des fuites
-    leaks)
-        echo ""
-        echo "=== Traitement: Calcul des fuites ==="
-        
-        # Verifier que l'identifiant est fourni
-        if [ -z "$OPTION" ]; then
-            erreur "Identifiant d'usine manquant"
-        fi
+        elif [ "$COMMANDE" = "leaks" ]; then
         
         ID_USINE="$OPTION"
         echo "Usine: $ID_USINE"
@@ -399,14 +389,11 @@ EOF
         ;;
 esac
 
-# Afficher la duree d'execution
-afficher_duree
-# Ouverture automatique du dossier des graphiques
-if command -v explorer.exe >/dev/null 2>&1; then
-    explorer.exe "$(pwd)/graphs"
-elif command -v xdg-open >/dev/null 2>&1; then
-    xdg-open graphs
+
+else
+    erreur "Commande inconnue : '$COMMANDE'. Commandes valides : histo, leaks"
 fi
 
+afficher_duree
 
 exit 0
