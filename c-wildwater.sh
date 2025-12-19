@@ -1,18 +1,8 @@
 #!/bin/bash
 
-# =============================================================================
-# c-wildwater.sh - Script principal du projet C-Wildwater
-# =============================================================================
-# Ce script gere le traitement des donnees de distribution d'eau.
-# Il filtre les donnees avec grep/awk, appelle le programme C, 
-# et genere les graphiques.
-#
-# Usage:
-#   ./c-wildwater.sh <fichier_donnees> histo <max|src|real|all>
-#   ./c-wildwater.sh <fichier_donnees> leaks "<identifiant_usine>"
-# =============================================================================
 
-# Enregistrer le temps de debut
+
+# Enregistrer le temps
 DEBUT=$(date +%s%3N)
 
 # Repertoire du script
@@ -24,22 +14,16 @@ TEMP_DIR="$SCRIPT_DIR/tmp"
 
 # Fonction pour afficher l'usage
 afficher_usage() {
-    echo "=== Projet C-Wildwater ==="
+    echo "Usage : $0 <fichier.dat> <commande> [options]"
     echo ""
-    echo "Usage:"
-    echo "  $0 <fichier_donnees> histo <max|src|real|all>"
-    echo "  $0 <fichier_donnees> leaks \"<identifiant_usine>\""
+    echo "Commandes disponibles :"
+    echo "  histo {max|src|real|all}  - Generation d'histo usines"
+    echo "  leaks \"<identifiant>\"     - Calcul des fuites"
     echo ""
-    echo "Commandes:"
-    echo "  histo max   - Histogramme de la capacite maximale des usines"
-    echo "  histo src   - Histogramme du volume capte par les sources"
-    echo "  histo real  - Histogramme du volume reellement traite"
-    echo "  histo all   - Histogramme combine (bonus)"
-    echo "  leaks       - Calcul des fuites pour une usine donnee"
-    echo ""
-    echo "Exemples:"
-    echo "  $0 donnees.dat histo max"
-    echo "  $0 donnees.dat leaks \"Plant #JA200000I\""
+    echo "Exemples d'utilisation :"
+    echo "  $0 wildwater.dat histo max"
+    echo "  $0 wildwater.dat histo src"
+    echo "  $0 wildwater.dat leaks \"Facility complex #RH400057F\""
 }
 
 # Fonction pour afficher une erreur et quitter
@@ -58,7 +42,7 @@ afficher_duree() {
 }
 
 # Verifier le nombre d'arguments
-if [ $# -lt 3 ]; then
+if [ $# -lt 2]; then
     afficher_usage
     erreur "Nombre d'arguments insuffisant"
 fi
@@ -83,9 +67,9 @@ mkdir -p "$GRAPHS_DIR"
 mkdir -p "$TESTS_DIR"
 mkdir -p "$TEMP_DIR"
 
-# =============================================================================
+
 # Compilation du programme C
-# =============================================================================
+
 echo "=== Verification de la compilation ==="
 
 cd "$CODE_C_DIR" || erreur "Impossible d'acceder au repertoire codeC"
