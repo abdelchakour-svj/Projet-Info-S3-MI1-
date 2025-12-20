@@ -318,76 +318,93 @@ EOF
     
     # Commande LEAKS - Calcul des fuites
         elif [ "$COMMANDE" = "leaks" ]; then
-        
-        ID_USINE="$OPTION"
-        echo "Usine: $ID_USINE"
+
+		    # Verification que l'identifiant est fourni
+		    if [ "$#" -ne 3 ]; then
+		        erreur "La commande 'leaks' necessite un identifiant d'usine"
+		    fi
+
+		IDENTIFIANT_USINE="$3"
+
+		 echo ""
+    	 echo "=== Calcul des fuites pour l'usine : $IDENTIFIANT_USINE ==="
         
         # Definir les fichiers
         FICHIER_SORTIE="$TESTS_DIR/leaks.dat"
         FICHIER_FILTRE="$TEMP_DIR/donnees_usine.csv"
         
-        # Filtrage des donnees avec grep pour cette usine specifique
-        echo "Filtrage des donnees pour l'usine $ID_USINE..."
-        
-        # Extraire les captages vers cette usine (source -> usine)
-        # Format: -;Source;Usine;volume;pourcentage
-        echo "  -> Extraction des captages..."
-        grep -F "$ID_USINE" "$FICHIER_DONNEES" | \
-            grep -E "^-;(Source|Well|Spring|Fountain|Resurgence)" > "$TEMP_DIR/captages_usine.csv"
+	      	# Creer le fichier avec l'en-tete s'il n'existe pas encore
+	    if [ ! -f "$FICHIER_SORTIE" ]; then
+	        echo "identifier;Leak volume (M.m3.year-1)" > "$FICHIER_SORTIE"
+	        echo "Creation du fichier de sortie avec en-tete"
+	    fi
+
+		echo "Filtrage des donnees pour l'usine..."
+
+
+		echo "  -> Extraction des captages..."
+   		 grep -F "$IDENTIFIANT_USINE" "$FICHIER_DONNEES" | \
+        grep -E "^-;(Source #|Well #|Well field #|Spring #|Fountain #|Resurgence #)" > "$TEMP_DIR/captages_usine.csv"
+
+      
         
         # Extraire tous les troncons de distribution de cette usine
         # Ce sont les lignes ou la colonne 1 contient l'identifiant de l'usine
         echo "  -> Extraction des troncons de distribution..."
-        grep -F "$ID_USINE" "$FICHIER_DONNEES" | \
+        grep -F "$IDENTIFIANT_USINE" "$FICHIER_DONNEES" | \
             grep -v "^-;" > "$TEMP_DIR/distribution_usine.csv"
         
         # Extraire aussi les troncons usine -> stockage
-        # Format: -;Usine;Storage;-;pourcentage
-        echo "  -> Extraction des stockages..."
-        grep -F "$ID_USINE" "$FICHIER_DONNEES" | \
-            grep -E "^-;.*Storage" >> "$TEMP_DIR/distribution_usine.csv"
         
+        echo "  -> Extraction des stockages..."
+        grep -F "$IDENTIFIANT_USINE" "$FICHIER_DONNEES" | \
+            grep -v "^-;" > "$TEMP_DIR/distribution_usine.csv"
+
+		 # Extraire aussi les troncons usine -> stockage
+	    # Format: -;Usine;Storage;-;pourcentage
+	    echo "  -> Extraction des stockages..."
+	    grep -F "$IDENTIFIANT_USINE" "$FICHIER_DONNEES" | \
+	        grep -E "^-;.*Storage" >> "$TEMP_DIR/distribution_usine.csv"
+
+
         # Compter les lignes avec awk
-        NB_CAPTAGES=$(awk 'END {print NR}' "$TEMP_DIR/captages_usine.csv")
-        NB_DISTRIB=$(awk 'END {print NR}' "$TEMP_DIR/distribution_usine.csv")
+        NB_CAPTAGES=$(awk 'END {print NR}' "$TEMP_DIR/captages_usine.csv" 2>/dev/null || echo "0")
+   		NB_DISTRIB=$(awk 'END {print NR}' "$TEMP_DIR/distribution_usine.csv" 2>/dev/null || echo "0")
         echo "  -> $NB_CAPTAGES captages trouves"
         echo "  -> $NB_DISTRIB troncons de distribution trouves"
         
         # Combiner les fichiers
-        cat "$TEMP_DIR/captages_usine.csv" "$TEMP_DIR/distribution_usine.csv" > "$FICHIER_FILTRE"
+        cat "$TEMP_DIR/captages_usine.csv" "$TEMP_DIR/distribution_usine.csv" > "$DONNEES_FILTREES" 2>/dev/null
         
-        # Creer l'en-tete du fichier de sortie si necessaire
-        if [ ! -f "$FICHIER_SORTIE" ]; then
-            echo "identifier;Leak volume (M.m3.year-1)" > "$FICHIER_SORTIE"
-        fi
         
         # Appeler le programme C
-        echo "Execution du programme C..."
-        "$CODE_C_DIR/wildwater" leaks "$ID_USINE" "$FICHIER_FILTRE" "$FICHIER_SORTIE"
-        RETOUR=$?
+        echo "Appel du programme C pour le calcul des fuites..."
+   		"$CODE_C_DIR/wildwater" leaks "$IDENTIFIANT_USINE" "$DONNEES_FILTREES" "$FICHIER_SORTIE"
+
         
-        if [ $RETOUR -ne 0 ]; then
-            erreur "Le programme C a retourne une erreur (code: $RETOUR)"
-        fi
+		       # Verification du code retour du programme C
+		    if [ $? -ne 0 ]; then
+		        rm -f "$DONNEES_FILTREES" "$TEMP_DIR"/*.csv
+		        erreur "Le programme C a retourne une erreur"
+		    fi
         
         # Nettoyer les fichiers temporaires
-        rm -f "$TEMP_DIR/captages_usine.csv" "$TEMP_DIR/distribution_usine.csv" "$FICHIER_FILTRE"
+		rm -f "$DONNEES_FILTREES" "$TEMP_DIR/captages_usine.csv" "$TEMP_DIR/distribution_usine.csv"
         
-        echo ""
-        echo "=== Traitement termine avec succes ==="
-        echo "Resultat ajoute dans: $FICHIER_SORTIE"
-        
+	    echo ""
+	    echo "=== Calcul des fuites termine avec succes ==="
+	    echo "Resultat ajoute dans le fichier : $FICHIER_SORTIE"
+	        
         # Afficher le dernier resultat avec awk
         echo ""
-        echo "Dernier resultat:"
-        awk 'END {print}' "$FICHIER_SORTIE"
+        echo "Dernier resultat calcule:"
+           tail -1 "$FICHIER_SORTIE"
         ;;
     
     # Commande inconnue
-    *)
-        erreur "Commande inconnue: $COMMANDE (valides: histo, leaks)"
-        ;;
-esac
+    else
+    erreur "Commande inconnue : '$COMMANDE'. Commandes valides : histo, leaks"
+fi
 
 
 else
