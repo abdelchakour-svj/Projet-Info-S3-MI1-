@@ -15,7 +15,7 @@ TEMP_DIR="$SCRIPT_DIR/tmp"
 
 
 
-#Message d accueil ( quand on lance le code)
+#Message d'accueil (lors du lancement du script)
 afficher_usage() {
     echo "Usage : $0 <fichier.dat> <commande> [options]"
     echo ""
@@ -29,7 +29,7 @@ afficher_usage() {
     echo "  $0 wildwater.dat leaks \"Facility complex #RH400057F\""
 }
 
-#Messaege erreur 
+#Message d'erreur 
 erreur() {
     echo "Erreur : $1" >&2
     afficher_duree
@@ -55,12 +55,12 @@ FICHIER_DONNEES="$1"
 COMMANDE="$2"
 OPTION="$3"
 
-# Verifier que l utilisateur a bien donenr un mode et une option
+# Vérifier qu'il n'y a pas plus de 3 arguments
 if [ "$#" -gt 3 ]; then
     erreur "Trop d'arguments fournis"
 fi
 
-#Verifier que le fichier donne  à traiter est existe bien 
+#Verifier que le fichier donne à traiter est existe bien 
 if [ ! -f "$FICHIER_DONNEES" ]; then
     erreur "Le fichier '$FICHIER_DONNEES' est introuvable"
 fi
@@ -77,7 +77,7 @@ echo " Verification de la compilation "
 #on va dans le dossier code C
 cd "$CODE_C_DIR" || erreur "Impossible d'acceder au repertoire codeC"
 
-#Verifie si il existe pas deja un executable si oui lexecuter sinon non alors verfier si cest compilable ou non
+#Vérifier si l'exécutable existe, sinon le compiler avec make
 if [ ! -f "wildwater" ]; then
     echo "Compilation du programme C avec make"
     make
@@ -89,18 +89,16 @@ else
     echo "L'executable wildwater existe deja"
 fi
 
-#on va dans le dossier initale ( script)
-
+#Retourner au répertoire principal du script
 cd "$SCRIPT_DIR" || erreur "Impossible de revenir au repertoire principal"
 
 
 
-#en fonction de la la commande on gere le cas 
-
-#CAS  HISTOGRAMME
+#Traitement selon la commande fournie
+#Traitement de la commande 'histo'
 if [ "$COMMANDE" = "histo" ]; then
     
-    #Verification que l'option est bien fournie
+    #Vérifier que le nombre total d'arguments donne est exactement 3
     if [ "$#" -ne 3 ]; then
         erreur "La commande 'histo' necessite une option (max, src, real )"
     fi
@@ -116,11 +114,7 @@ if [ "$COMMANDE" = "histo" ]; then
     #Definition des noms de fichiers
     DONNEES_FILTREES="$TEMP_DIR/donnees_filtrees.csv"
     FICHIER_SORTIE="$TESTS_DIR/vol_$OPTION.dat"
-    
-  
-    #Filtrage des données (grep+awk )
-  
-    
+
     echo "Filtrage des donnees avec grep et awk..."
     
     #Extraction des lignes d'usines (description de capacite maximale)
@@ -129,22 +123,22 @@ if [ "$COMMANDE" = "histo" ]; then
     grep -E "^-;(Plant #|Module #|Unit #|Facility complex #)" "$FICHIER_DONNEES" | \
         grep -E ";-;[0-9]+;-$" > "$TEMP_DIR/usines.csv"
     
-    #Extraction des lignes qui correspondetn à source vers usine
+    #Extraction des lignes de captage (source vers usine)
     
     echo "  -> Extraction des volumes captes par les sources..."
     grep -E "^-;(Source #|Well #|Well field #|Spring #|Fountain #|Resurgence #)" "$FICHIER_DONNEES" | \
         grep -E ";(Plant #|Module #|Unit #|Facility complex #)" > "$TEMP_DIR/captages.csv"
     
-    #Compter le nombre de lignes extraites avec le grp et awk
+    #Compter le nombre de lignes extraites avec wc
     NB_USINES=$(wc -l < "$TEMP_DIR/usines.csv")
     NB_CAPTAGES=$(wc -l < "$TEMP_DIR/captages.csv")
     echo "  -> $NB_USINES usines trouvees"
     echo "  -> $NB_CAPTAGES relations de captage trouvees"
     
-    #Fusisioner les deux fihcier pour envoyer au C
+    #Fusionner les deux fichiers
     cat "$TEMP_DIR/usines.csv" "$TEMP_DIR/captages.csv" > "$DONNEES_FILTREES"
     
-    #Verifier que le fichier qu on vient de fusionner est bien rempli sinon le supp
+    #Vérifier que le fichier fusionné contient est pas vide
     if [ ! -s "$DONNEES_FILTREES" ]; then
         rm -f "$DONNEES_FILTREES" "$TEMP_DIR"/*.csv
         erreur "Aucune donnee n'a pu etre extraite du fichier"
@@ -156,7 +150,7 @@ if [ "$COMMANDE" = "histo" ]; then
     "$CODE_C_DIR/wildwater" histo "$OPTION" "$DONNEES_FILTREES" "$FICHIER_SORTIE"
 	
     
-    #On verifie que le code c retourne bien qq chose 
+    #Vérifier que le programme C s'est exécuté sans erreur
     if [ $? -ne 0 ]; then
         rm -f "$DONNEES_FILTREES" "$TEMP_DIR"/*.csv
         erreur "Le programme C a retourne une erreur"
@@ -175,7 +169,7 @@ if [ "$COMMANDE" = "histo" ]; then
 
 	
     if [ "$OPTION" = "all" ]; then
-        # Mode bonus : trier par le total des 3 colonnes
+        # Mode all : trier par le total des 3 colonnes
         awk -F';' 'NR>1 {total=$2+$3+$4; print $0";"total}' "$FICHIER_SORTIE" | \
             sort -t';' -k5 -n | head -50 | \
             awk -F';' '{print $1";"$2";"$3";"$4}' > "$FICHIER_PETITES"
@@ -185,7 +179,7 @@ if [ "$COMMANDE" = "histo" ]; then
             awk -F';' '{print $1";"$2";"$3";"$4}' > "$FICHIER_GRANDES"
     else
         
-		# Enlever CR éventuels + ignorer en-tête + ignorer les zéros
+		#Trier les usines par volume croissant (50 plus petites)
 	awk -F';' 'NR>1 && ($2+0) > 0 { gsub(/\r/,"",$0); print }' "$FICHIER_SORTIE" \
 	| LC_ALL=C sort -t';' -k2,2g \
 	| head -50 > "$FICHIER_PETITES"
@@ -197,10 +191,8 @@ if [ "$COMMANDE" = "histo" ]; then
     fi
     
    
-    # Definition des parametres pour gnuplot selon le mode
-   
-    
-    case "$OPTION" in
+    #définition des titres et labels selon le mode
+   	case "$OPTION" in
         max)
             YLABEL="Volume (M.m3.year-1)"
             TITRE="Capacite maximale de traitement"
@@ -226,7 +218,7 @@ if [ "$COMMANDE" = "histo" ]; then
     echo "Generation des graphiques avec gnuplot..."
     
     if [ "$OPTION" = "all" ]; then
-        # raphiques empiles pour le mode all
+        #Mode 'all' : histogrammes empilés avec 3 valeursl
         gnuplot <<EOF
 set terminal png size 1400,900
 set datafile separator ";"
@@ -255,7 +247,7 @@ plot "$FICHIER_GRANDES" using 2:xtic(1) title "Volume reel" lc rgb "#6699FF", \
      '' using 4 title "Capacite disponible" lc rgb "#99FF99"
 EOF
     else
-        #Graphiques simples pour les modes comme max, src, real
+        #Modes 'max', 'src', 'real' : histogrammes classiques
         gnuplot <<EOF
 set terminal png size 1400,900
 set datafile separator ";"
@@ -280,7 +272,7 @@ EOF
     fi
     
     
-	#On verifie que les graphiques ont bien ete genere 
+	#Vérifier la génération réussie des fichiers PNG 
 
     if [ $? -eq 0 ]; then
         echo "Graphiques generes avec succes :"
@@ -298,17 +290,17 @@ EOF
     echo "Fichier de donnees : $FICHIER_SORTIE"
 
 
-#TRAITEMENT CALCUL DES FUITES
+#TRAITEMENT CALCUL DES LEAKS
 
 
 elif [ "$COMMANDE" = "leaks" ]; then
     
-    #Verification que dans l appelle du terminal il y a bien l identifiant usine
+    #Vérifier que l'identifiant de l'usine est fourni
     if [ "$#" -ne 3 ]; then
         erreur "La commande 'leaks' necessite un identifiant d'usine"
     fi
 
-	#On recupere l'identifiant de lusine 
+	#Stocker l'identifiant de l'usine 
     IDENTIFIANT_USINE="$3"
     
     echo ""
@@ -318,7 +310,7 @@ elif [ "$COMMANDE" = "leaks" ]; then
     FICHIER_SORTIE="$TESTS_DIR/leaks.dat"
     DONNEES_FILTREES="$TEMP_DIR/donnees_usine.csv"
     
-    #Creer le fichier s'il n'existe pas encore et on met bien  "identifier;Leak volume (M.m3.year-1)" au debut du fichier 
+    #Créer le fichier avec l'en-tête s'il n'existe pas
     if [ ! -f "$FICHIER_SORTIE" ]; then
         echo "identifier;Leak volume (M.m3.year-1)" > "$FICHIER_SORTIE"
         echo "Creation du fichier de sortie avec en-tete"
