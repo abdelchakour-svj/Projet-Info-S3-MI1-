@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# enregistrer le tmp 
-DEBUT=$(date +%s%3N)
+
 # Je commence par noter l'heure exacte du lancement et je prépare mes chemins de dossiers. 
 # C'est plus pratique de tout mettre dans des variables au début pour pas se perdre après.
 DEBUT=$(date +%s%3N)
