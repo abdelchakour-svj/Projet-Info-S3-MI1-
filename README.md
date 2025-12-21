@@ -122,10 +122,10 @@ de distribution depuis une usine jusqu'aux usagers.
 Utilisé pour le calcul des fuites.
 
 ## Auteurs
-AAMIR Talal
-ARSLAN Emir
+AAMIR Talal,
+ARSLAN Emir,
 WADOUD Abdel
-Projet préING2 - CY Tech 
+Projet préING2 MI-1 - CY Tech 
 
 ## Dépendances
 
