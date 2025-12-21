@@ -124,7 +124,7 @@ Utilisé pour le calcul des fuites.
 ## Auteurs
 AAMIR Talal,
 ARSLAN Emir,
-WADOUD Abdel
+Chakour assila Abdel wadoud
 Projet préING2 MI-1 - CY Tech 
 
 ## Dépendances
