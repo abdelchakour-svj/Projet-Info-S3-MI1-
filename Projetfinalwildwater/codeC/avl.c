@@ -2,8 +2,7 @@
 
   avl.c - Implementation de l'arbre AVL
   
-  L'AVL est un arbre binaire de recherche equilibre.
-  L'equilibrage garantit une complexite .
+
    Cet AVL stocke les usines triees par identifiant. Lors de l'insertion,
   si une usine existe deja, ses volumes s'ajoute (captage et traitement).
   equilibre: eq = hauteur(fd) - hauteur(fg)
