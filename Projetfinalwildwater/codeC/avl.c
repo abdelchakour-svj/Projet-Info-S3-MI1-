@@ -1,12 +1,12 @@
 /*
 
- * avl.c - Implementation de l'arbre AVL
- * 
- * L'AVL est un arbre binaire de recherche equilibre.
- * L'equilibrage garantit une complexite .
- *  Cet AVL stocke les usines triees par identifiant. Lors de l'insertion,
- * si une usine existe deja, ses volumes s'ajoute (captage et traitement).
- * equilibre: eq = hauteur(fd) - hauteur(fg)
+  avl.c - Implementation de l'arbre AVL
+  
+  L'AVL est un arbre binaire de recherche equilibre.
+  L'equilibrage garantit une complexite .
+   Cet AVL stocke les usines triees par identifiant. Lors de l'insertion,
+  si une usine existe deja, ses volumes s'ajoute (captage et traitement).
+  equilibre: eq = hauteur(fd) - hauteur(fg)
  
  */
 
@@ -40,7 +40,7 @@ int min3(int a, int b, int c) {
 
 
 
-/* Cree un nouveau noeud avec les donnees de l'usine */
+// Cree un nouveau noeud avec les donnees de l'usine 
 NoeudAVL* creerNoeud(Usine usine) {
     NoeudAVL *nouveau = (NoeudAVL*)malloc(sizeof(NoeudAVL));
     if (nouveau == NULL) {
@@ -62,11 +62,11 @@ NoeudAVL* rotationGauche(NoeudAVL *a) {
     int eq_a = a->eq;
     int eq_p = pivot->eq;
 
-    /* Effectuer la rotation */
+    // Effectuer la rotation 
     a->fd = pivot->fg;
     pivot->fg = a;
 
-    /* Mise a jour des facteurs d'equilibre selon le cours */
+
     a->eq = eq_a - max(eq_p, 0) - 1;
     pivot->eq = min3(eq_a - 2, eq_a + eq_p - 2, eq_p - 1);
 
@@ -90,8 +90,8 @@ NoeudAVL* rotationDroite(NoeudAVL *a) {
 }
 
 /*
- * Double rotation gauche (rotation droite-gauche)
- * Utilisee quand eq >= 2 et pivot->eq < 0
+ Double rotation gauche (rotation droite-gauche)
+  Utilisee quand eq >= 2 et pivot->eq < 0
  */
 NoeudAVL* doubleRotationGauche(NoeudAVL *a) {
     a->fd = rotationDroite(a->fd);
@@ -99,8 +99,8 @@ NoeudAVL* doubleRotationGauche(NoeudAVL *a) {
 }
 
 /*
- * Double rotation droite (rotation gauche-droite)
- * Utilisee quand eq <= -2 et pivot->eq > 0
+ Double rotation droite (rotation gauche-droite)
+  Utilisee quand eq <= -2 et pivot->eq > 0
  */
 NoeudAVL* doubleRotationDroite(NoeudAVL *a) {
     a->fg = rotationGauche(a->fg);
@@ -110,8 +110,8 @@ NoeudAVL* doubleRotationDroite(NoeudAVL *a) {
 // Equilibrage 
 
 /*
- * Equilibre l'arbre AVL si necessaire
- * Applique les rotations appropriees selon le facteur d'equilibre
+  Equilibre l'arbre AVL si necessaire
+  Applique les rotations appropriees selon le facteur d'equilibre
  */
 NoeudAVL* equilibrerAVL(NoeudAVL *a) {
     if (a->eq >= 2) {
@@ -129,16 +129,16 @@ NoeudAVL* equilibrerAVL(NoeudAVL *a) {
             return doubleRotationDroite(a);
         }
     }
-    return a;  /* Pas besoin de  reequilibrage  */
+    return a;  
 }
 
 //      Insertion  
 
 /*
- * Insere une usine dans l'AVL et reequilibre si necessaire
- * h: pointeur pour indiquer si la hauteur a change
- *  La capacite max n'est mise a jour que si la nouvelle valeur est non nulle.
- * Si l'usine existe deja, on cumule les volumes captes et traites.
+ Insere une usine dans l'AVL et reequilibre si necessaire
+ h: pointeur pour indiquer si la hauteur a change
+  La capacite max n'est mise a jour que si la nouvelle valeur est non nulle.
+ Si l'usine existe deja, on cumule les volumes captes et traites.
  */
 NoeudAVL* insererAVL(NoeudAVL *a, Usine usine, int *h) {
     int cmp;
@@ -170,7 +170,7 @@ NoeudAVL* insererAVL(NoeudAVL *a, Usine usine, int *h) {
         return a;
     }
 
-    /* Mise a jour du facteur d'equilibre et reequilibrage */
+    // Mise a jour du facteur d'equilibre et reequilibrage 
     if (*h != 0) {
         a->eq += *h;
         a = equilibrerAVL(a);
@@ -180,9 +180,9 @@ NoeudAVL* insererAVL(NoeudAVL *a, Usine usine, int *h) {
     return a;
 }
 
-/*  Recherche  */
+//  Recherche  
 
-/* Recherche une usine grace a son  identifiant , si elle n existe pas return NULL */
+// Recherche une usine grace a son  identifiant , si elle n existe pas return NULL 
 NoeudAVL* rechercherAVL(NoeudAVL *racine, char *identifiant) {
     int cmp;
 
@@ -202,9 +202,9 @@ NoeudAVL* rechercherAVL(NoeudAVL *racine, char *identifiant) {
 //       Parcours  :
 
 /* 
- * Parcours en ordre inverse (droite, racine, gauche ) 
- * usien trier par identifiant 
- * Mode: 1=max, 2=src, 3=real, 4=all
+  Parcours en ordre inverse (droite, racine, gauche ) 
+  usien trier par identifiant 
+  Mode: 1=max, 2=src, 3=real, 4=all
  */
 void parcoursInverseAVL(NoeudAVL *racine, FILE *fichier, int mode) {
     double valMax, valSrc, valReal;
@@ -220,7 +220,7 @@ void parcoursInverseAVL(NoeudAVL *racine, FILE *fichier, int mode) {
     valSrc = racine->usine.volume_capte / 1000.0;
     valReal = racine->usine.volume_traite / 1000.0;
 
-    /* Ecrire selon le mode */
+    // Ecrire selon le mode 
     if (mode == 1) {
         fprintf(fichier, "%s;%.6f\n", racine->usine.identifiant, valMax);
     } else if (mode == 2) {
@@ -238,7 +238,7 @@ void parcoursInverseAVL(NoeudAVL *racine, FILE *fichier, int mode) {
 
 // liberer la memoire :
 
-//Libere la memoire de l'arbre 
+ 
 void libererAVL(NoeudAVL *racine) {
     if (racine == NULL)
         return;
@@ -247,7 +247,7 @@ void libererAVL(NoeudAVL *racine) {
     free(racine);
 }
 
-/* Compte le nombre de noeuds dans l'arbre */
+
 int compterNoeuds(NoeudAVL *racine) {
     if (racine == NULL)
         return 0;
