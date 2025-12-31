@@ -134,6 +134,9 @@ Projet préING2 MI-1 - CY Tech
 - Gnuplot ( génération des graphiques)
 - Bash
 
+## Ressource Utile :
+https://carte-mental-projet.my.canva.site/ (carte explicatif interactif)
+
 
 
 
